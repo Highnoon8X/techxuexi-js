@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         不学习何以强国-beta
 // @namespace    http://tampermonkey.net/
-// @version      20211223
+// @version      20220214
 // @description  问题反馈位置： https://github.com/TechXueXi/techxuexi-js/issues 。读文章,看视频，做习题。
 // @author       techxuexi ，荷包蛋。
 // @match        https://www.xuexi.cn
@@ -11,8 +11,8 @@
 // @match        https://pc.xuexi.cn/points/exam-weekly-list.html
 // @match        https://pc.xuexi.cn/points/exam-paper-detail.html?id=*
 // @match        https://pc.xuexi.cn/points/exam-paper-list.html
-// @require      https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js
-// @require      https://cdn.bootcdn.net/ajax/libs/blueimp-md5/2.9.0/js/md5.min.js
+// @require      https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.5.1.min.js
+// @require      https://cdn.jsdelivr.net/npm/blueimp-md5@2.9.0
 // @grant        GM_addStyle
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -71,6 +71,19 @@ var examPaperTotalPageCount = null;
 var examPaperReverse = false;
 //每周答题，专项答题 请求rate 限制 每 3000ms 一次
 const ratelimitms = 3000;
+
+//默认情况下, chrome 只允许 window.close 关闭 window.open 打开的窗口,所以我们就要用window.open命令,在原地网页打开自身窗口再关上,就可以成功关闭了
+function closeWin() {
+    try {
+         window.opener = window;
+         var win = window.open("","_self");
+         win.close();
+         top.close();
+    } catch (e) {
+        }
+
+}
+
 $(document).ready(function () {
     let url = window.location.href;
     if (url == "https://www.xuexi.cn" || url == "https://www.xuexi.cn/" || url == "https://www.xuexi.cn/index.html") {
@@ -156,6 +169,23 @@ function getVideoTag() {
     let iframe = document.getElementsByTagName("iframe")[0];
     let video = null;
     let pauseButton = null;
+    var u = navigator.userAgent;
+    if(u.indexOf('Mac') > -1){//Mac
+    if (iframe != null && iframe.innerHTML) {
+        //如果有iframe,说明外面的video标签是假的
+        video = iframe.contentWindow.document.getElementsByTagName("video")[0];
+        pauseButton = iframe.contentWindow.document.getElementsByClassName("prism-play-btn")[0];
+    } else {
+        //否则这个video标签是真的
+        video = document.getElementsByTagName("video")[0];
+        pauseButton = document.getElementsByClassName("prism-play-btn")[0];
+    }
+    return {
+        "video": video,
+        "pauseButton": pauseButton
+    }
+    }
+    else{
     if (iframe) {
         //如果有iframe,说明外面的video标签是假的
         video = iframe.contentWindow.document.getElementsByTagName("video")[0];
@@ -169,13 +199,19 @@ function getVideoTag() {
         "video": video,
         "pauseButton": pauseButton
     }
+    }
 }
 
 //读新闻或者看视频
 //type:0为新闻，1为视频
 async function reading(type) {
     //看文章或者视频
-    let time = parseInt(Math.random() * (100 - 80 + 1) + 80, 10);//80-100秒后关闭页面
+    var time=1;
+if (type == 0) {
+    time = parseInt(Math.random() * (100 - 80 + 1) + 80, 10);//80-100秒后关闭页面，看文章
+} else {
+    time = parseInt(Math.random() * (250 - 230 + 1) + 230, 10);//230-250秒后关闭页面，看视频
+}
     let firstTime = time - 2;
     let secendTime = 12;
     let scrollLength = document.body.scrollHeight / 2;
@@ -205,7 +241,7 @@ async function reading(type) {
                 GM_setValue('watchingUrl', null);
             }
             clearInterval(readingInterval);
-            window.close();
+            closeWin();
         }
     }, 1000);
     //关闭文章或视频页面
@@ -824,7 +860,7 @@ async function doingExam() {
             break;
         }
     }
-    window.close();
+    closeWin();
 }
 //获取关键字
 function getKey() {
