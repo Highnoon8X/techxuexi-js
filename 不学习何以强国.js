@@ -94,6 +94,35 @@ function closeWin() {
 
 }
 
+/**  模拟鼠标移动  改方法来自https://blog.csdn.net/Wuzihui___/article/details/79952068
+ * @param id
+ * @param clientX  相对窗口横坐标
+ * @param clientY  相对窗口纵坐标
+ * @param distance 滑动距离
+ */
+function  dragandDrop(btn_hk, clientX, clientY, distance) {
+    var elem = btn_hk,
+        k = 0,
+        interval;
+    iME(elem,"mousedown",0, 0, clientX, clientY);
+    interval = setInterval(function() {
+        k++;
+        iter(k);
+        if (k === distance) {
+            clearInterval(interval);
+            iME(elem,"mouseup",clientX + k, clientY, 220 + k, 400);
+        }
+    }, 10);
+    function iter(y) {
+        iME(elem,"mousemove",clientX + y, clientY, clientX + y, clientY);
+    }
+    function iME(obj,event,screenXArg,screenYArg,clientXArg,clientYArg){
+        var mousemove = document.createEvent("MouseEvent");
+        mousemove.initMouseEvent(event, true, true, unsafeWindow, 0, screenXArg, screenYArg, clientXArg, clientYArg, 0, 0, 0, 0, 0, null);
+        obj.dispatchEvent(mousemove);
+    }
+}
+
 /**
  * 随机等待最小到最大之间几秒, 需要await
  * @param {number} minSecond 最短时长
@@ -701,6 +730,9 @@ async function doingExam() {
         await waitRandomBetween(2, 5);
         await doingPause();
         nextButton = await getNextButton();
+        if(document.getElementsByClassName('nc_iconfont btn_slide')[0] != null) {
+            dragandDrop(document.getElementsByClassName('nc_iconfont btn_slide')[0],0,0,300);
+        }
         if (nextButton.textContent == "再练一次" || nextButton.textContent == "再来一组" || nextButton.textContent == "查看解析") {
             break;
         }
@@ -1034,7 +1066,7 @@ function clickManualButton() {
 function createStartButton() {
     let base = document.createElement("div");
     var baseInfo = "";
-    baseInfo += "<form id=\"settingData\" class=\"egg_menu\" action=\"\" target=\"_blank\" onsubmit=\"return false\"><div class=\"egg_setting_box\"><div class=\"egg_setting_item\"><label>新闻<\/label><input class=\"egg_setting_switch\" type=\"checkbox\" name=\"News\" " + (settings.News ? 'checked' : '') + "\/>				<\/div>				<div class=\"egg_setting_item\">					<label>视频<\/label>					<input class=\"egg_setting_switch\" type=\"checkbox\" name=\"Video\" " + (settings.Video ? 'checked' : '') + "\/>				<\/div>				<div class=\"egg_setting_item\">					<label>每日答题<\/label>					<input class=\"egg_setting_switch\" type=\"checkbox\" name=\"ExamPractice\" " + (settings.ExamPractice ? 'checked' : '') + "\/>				<\/div>				<div class=\"egg_setting_item\">					<label>每周答题<\/label>					<input class=\"egg_setting_switch\" type=\"checkbox\" name=\"ExamWeekly\" " + (settings.ExamWeekly ? 'checked' : '') + "\/>				<\/div>				<div class=\"egg_setting_item\">					<label>专项练习<\/label>					<input class=\"egg_setting_switch\" type=\"checkbox\" name=\"ExamPaper\" " + (settings.ExamPaper ? 'checked' : '') + "\/><\/div><hr \/><div title='Tip:开始学习后，隐藏相关页面和提示（不隐藏答题中的关闭自动答题按钮）' class=\"egg_setting_item\"> <label>运行隐藏<\/label> <input class=\"egg_setting_switch\" type=\"checkbox\" name=\"ShowMenu\"" + (settings.ShowMenu ? 'checked' : '') + "/></div>" +
+    baseInfo += "<form id=\"settingData\" class=\"egg_menu\" action=\"\" target=\"_blank\" onsubmit=\"return false\"><div class=\"egg_setting_box\"><div class=\"egg_setting_item\"><label>新闻<\/label><input class=\"egg_setting_switch\" type=\"checkbox\" name=\"News\" " + (settings.News ? 'checked' : '') + "\/>				<\/div>				<div class=\"egg_setting_item\">					<label>视频<\/label>					<input class=\"egg_setting_switch\" type=\"checkbox\" name=\"Video\" " + (settings.Video ? 'checked' : '') + "\/>				<\/div>				<div class=\"egg_setting_item\">					<label>每日答题<\/label>					<input class=\"egg_setting_switch\" type=\"checkbox\" name=\"ExamPractice\" " + (settings.ExamPractice ? 'checked' : '') + "\/>				<\/div>	<div class=\"egg_setting_item\">					<label>专项练习<\/label>					<input class=\"egg_setting_switch\" type=\"checkbox\" name=\"ExamPaper\" " + (settings.ExamPaper ? 'checked' : '') + "\/><\/div><hr \/><div title='Tip:开始学习后，隐藏相关页面和提示（不隐藏答题中的关闭自动答题按钮）' class=\"egg_setting_item\"> <label>运行隐藏<\/label> <input class=\"egg_setting_switch\" type=\"checkbox\" name=\"ShowMenu\"" + (settings.ShowMenu ? 'checked' : '') + "/></div>" +
         "<div title='Tip:进入学习首页5秒后自动开始学习' class=\"egg_setting_item\"> <label>自动开始<\/label> <input class=\"egg_setting_switch\" type=\"checkbox\" name=\"AutoStart\"" + (settings.AutoStart ? 'checked' : '') + "/></div>"
         +
         "<a style=\"text-decoration: none;\" title=\"视频不自动播放？点此查看解决办法\" target=\"blank\" href=\"https://docs.qq.com/doc/DZllGcGlJUG1qT3Vx\"><div style=\"color:#5F5F5F;font-size:14px;\" class=\"egg_setting_item\"><label style=\"cursor: pointer;\">视频不自动播放?<\/label><\/div><\/a><\/div><\/form>";
@@ -1111,6 +1143,15 @@ async function start() {
             if (taskProgress != null) {
                 console.log("开始学习")
 
+                // 显示目前得分
+                /*
+                let eggSettingItems = document.getElementsByClassName("egg_setting_item");
+                console.log(eggSettingItems[0].children[0].innerHTML);
+                eggSettingItems[0].children[0].innerHTML += ' ' + taskProgress[0].currentScore + '/' + taskProgress[0].dayMaxScore;
+                eggSettingItems[1].children[0].innerHTML += ' ' + ( taskProgress[1].currentScore + taskProgress[2].currentScore ) + '/' + ( taskProgress[1].dayMaxScore + taskProgress[2].dayMaxScore );
+                eggSettingItems[2].children[0].innerHTML += ' ' + taskProgress[5].currentScore + '/' + taskProgress[5].dayMaxScore;
+                eggSettingItems[3].children[0].innerHTML += ' ' + taskProgress[4].currentScore + '/' + taskProgress[4].dayMaxScore;
+                */
                 //检查新闻
                 if (settings.News && taskProgress[0].currentScore != taskProgress[0].dayMaxScore) {
                     tasks[0] = false;//只要还有要做的，就当做没完成
@@ -1123,7 +1164,7 @@ async function start() {
 
                 //检查视频
                 let temp = parseInt(taskProgress[1].dayMaxScore - taskProgress[1].currentScore);
-                let temp2 = parseInt(taskProgress[3].dayMaxScore - taskProgress[3].currentScore);
+                let temp2 = parseInt(taskProgress[2].dayMaxScore - taskProgress[2].currentScore);
                 if (settings.Video && (temp != 0 || temp2 != 0)) {
                     tasks[1] = false;//只要还有要做的，就当做没完成
                     videoNum = temp > temp2 ? temp : temp2;//还需要看多少个视频
@@ -1134,14 +1175,15 @@ async function start() {
                 }
 
                 //检查每日答题
-                if (settings.ExamPractice && taskProgress[6].currentScore != taskProgress[6].dayMaxScore) {
+                if (settings.ExamPractice && taskProgress[5].currentScore != taskProgress[5].dayMaxScore) {
                     tasks[2] = false;//只要还有要做的，就当做没完成
                     console.log("3.做每日答题");
                     await doExamPractice();
                 } else {
                     tasks[2] = true;
                 }
-
+                tasks[3] = true
+                /*
                 //检查每周答题
                 if (settings.ExamWeekly && taskProgress[2].currentScore == 0) {
                     tasks[3] = false;//只要还有要做的，就当做没完成
@@ -1153,10 +1195,10 @@ async function start() {
                     }
                 } else {
                     tasks[3] = true;
-                }
+                }*/
 
                 //检查专项练习
-                if (settings.ExamPaper && taskProgress[5].currentScore == 0) {
+                if (settings.ExamPaper && taskProgress[4].currentScore == 0) {
                     tasks[4] = false;//只要还有要做的，就当做没完成
                     console.log("5.做专项练习");
                     let result = await doExamPaper();
@@ -1185,7 +1227,7 @@ async function start() {
             showMenu()
         }
     } else {
-        //提醒登录 
+        //提醒登录
         // alert("请先登录");
 
         //修改为跳转到登陆页
