@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         不学习何以强国-beta
 // @namespace    http://tampermonkey.net/
-// @version      20220214
+// @version      20230318
 // @description  问题反馈位置： https://github.com/TechXueXi/techxuexi-js/issues 。读文章,看视频，做习题。
 // @author       techxuexi ，荷包蛋。
 // @match        https://www.xuexi.cn
@@ -24,7 +24,7 @@ var study_css = ".egg_study_btn{outline:0;border:0;position:fixed;top:5px;left:5
 GM_addStyle(study_css);
 //https://www.xuexi.cn/lgdata/3uoe1tg20en0.json
 //查询今日完成情况
-const SearchSocreUrl = "https://pc-proxy-api.xuexi.cn/api/score/days/listScoreProgress?sence=score&deviceType=2";
+const SearchSocreUrl = "https://pc-proxy-api.xuexi.cn/delegate/score/days/listScoreProgress?sence=score&deviceType=2";
 //重要新闻列表（主）
 const NewsUrl1 = "https://www.xuexi.cn/lgdata/1jscb6pu1n2.json";
 //学习时评新闻列表
@@ -94,29 +94,34 @@ function closeWin() {
 
 }
 
+async function sleep( timeMS ) {
+    return new Promise( res => setTimeout( res, time ) );
+}
+
 /**  模拟鼠标移动  改方法来自https://blog.csdn.net/Wuzihui___/article/details/79952068
  * @param id
  * @param clientX  相对窗口横坐标
  * @param clientY  相对窗口纵坐标
  * @param distance 滑动距离
  */
-function  dragandDrop(btn_hk, clientX, clientY, distance) {
+function dragandDrop(btn_hk, clientX, clientY, distance) {
     var elem = btn_hk,
         k = 0,
         interval;
     iME(elem,"mousedown",0, 0, clientX, clientY);
+    let waitTime = Math.floor(Math.random() * (0.005 * 1000 - 0.09 * 1000) + 0.09 * 1000)
     interval = setInterval(function() {
         k++;
         iter(k);
         if (k === distance) {
             clearInterval(interval);
-            iME(elem,"mouseup",clientX + k, clientY, 220 + k, 400);
+            iME(elem, "mouseup", clientX + k, clientY, 220 + k, 400);
         }
-    }, 10);
+    }, waitTime);
     function iter(y) {
-        iME(elem,"mousemove",clientX + y, clientY, clientX + y, clientY);
+        iME(elem, "mousemove", clientX + y, clientY, clientX + y, clientY);
     }
-    function iME(obj,event,screenXArg,screenYArg,clientXArg,clientYArg){
+    function iME(obj, event, screenXArg, screenYArg, clientXArg, clientYArg) {
         var mousemove = document.createEvent("MouseEvent");
         mousemove.initMouseEvent(event, true, true, unsafeWindow, 0, screenXArg, screenYArg, clientXArg, clientYArg, 0, 0, 0, 0, 0, null);
         obj.dispatchEvent(mousemove);
@@ -235,36 +240,46 @@ function getVideoTag() {
     let video = null;
     let pauseButton = null;
     var u = navigator.userAgent;
-    if (u.indexOf('Mac') > -1) {//Mac
-        if (iframe != null && iframe.innerHTML) {
-            //如果有iframe,说明外面的video标签是假的
-            video = iframe.contentWindow.document.getElementsByTagName("video")[0];
-            pauseButton = iframe.contentWindow.document.getElementsByClassName("prism-play-btn")[0];
-        } else {
-            //否则这个video标签是真的
-            video = document.getElementsByTagName("video")[0];
-            pauseButton = document.getElementsByClassName("prism-play-btn")[0];
-        }
-        return {
-            "video": video,
-            "pauseButton": pauseButton
-        }
+
+    // 视频播放按钮更新
+    video = document.getElementsByTagName("video")[0];
+    pauseButton = document.getElementsByClassName("prism-big-play-btn")[0];
+
+    return {
+        "video": video,
+        "pauseButton": pauseButton
     }
-    else {
-        if (iframe) {
-            //如果有iframe,说明外面的video标签是假的
-            video = iframe.contentWindow.document.getElementsByTagName("video")[0];
-            pauseButton = iframe.contentWindow.document.getElementsByClassName("prism-play-btn")[0];
-        } else {
-            //否则这个video标签是真的
-            video = document.getElementsByTagName("video")[0];
-            pauseButton = document.getElementsByClassName("prism-play-btn")[0];
-        }
-        return {
-            "video": video,
-            "pauseButton": pauseButton
-        }
-    }
+
+    // if (u.indexOf('Mac') > -1) {//Mac
+    //     if (iframe != null && iframe.innerHTML) {
+    //         //如果有iframe,说明外面的video标签是假的
+    //         video = iframe.contentWindow.document.getElementsByTagName("video")[0];
+    //         pauseButton = iframe.contentWindow.document.getElementsByClassName("prism-play-btn")[0];
+    //     } else {
+    //         //否则这个video标签是真的
+    //         video = document.getElementsByTagName("video")[0];
+    //         pauseButton = document.getElementsByClassName("prism-play-btn")[0];
+    //     }
+    //     return {
+    //         "video": video,
+    //         "pauseButton": pauseButton
+    //     }
+    // }
+    // else {
+    //     if (iframe) {
+    //         //如果有iframe,说明外面的video标签是假的
+    //         video = iframe.contentWindow.document.getElementsByTagName("video")[0];
+    //         pauseButton = iframe.contentWindow.document.getElementsByClassName("prism-play-btn")[0];
+    //     } else {
+    //         //否则这个video标签是真的
+    //         video = document.getElementsByTagName("video")[0];
+    //         pauseButton = document.getElementsByClassName("prism-play-btn")[0];
+    //     }
+    //     return {
+    //         "video": video,
+    //         "pauseButton": pauseButton
+    //     }
+    // }
 }
 
 //读新闻或者看视频
@@ -730,8 +745,8 @@ async function doingExam() {
         await waitRandomBetween(2, 5);
         await doingPause();
         nextButton = await getNextButton();
-        if(document.getElementsByClassName('nc_iconfont btn_slide')[0] != null) {
-            dragandDrop(document.getElementsByClassName('nc_iconfont btn_slide')[0],0,0,300);
+        if (document.getElementsByClassName('nc_iconfont btn_slide')[0] != null) {
+            dragandDrop(document.getElementsByClassName('nc_iconfont btn_slide')[0], 0, 0, 300);
         }
         if (nextButton.textContent == "再练一次" || nextButton.textContent == "再来一组" || nextButton.textContent == "查看解析") {
             break;
@@ -870,7 +885,6 @@ async function doingExam() {
                     }
                 }
                 if (!hasButton) {
-                    //没找到按钮，随便选一个
                     allbuttons[0].click();
                 }
                 break;
@@ -899,7 +913,11 @@ async function doingExam() {
                     }
                 } else {
                     //没答案，随便选一个
-                    allbuttons[0].click();
+                    try {
+                        allbuttons[0].click();
+                    } catch(e) {
+                        console.log(e);
+                    }
                 }
                 break;
             }
@@ -1175,7 +1193,7 @@ async function start() {
                 }
 
                 //检查每日答题
-                if (settings.ExamPractice && taskProgress[5].currentScore != taskProgress[5].dayMaxScore) {
+                if (settings.ExamPractice && taskProgress[3].currentScore != taskProgress[3].dayMaxScore) {
                     tasks[2] = false;//只要还有要做的，就当做没完成
                     console.log("3.做每日答题");
                     await doExamPractice();
@@ -1196,9 +1214,9 @@ async function start() {
                 } else {
                     tasks[3] = true;
                 }*/
-
+                    tasks[4] = true;
                 //检查专项练习
-                if (settings.ExamPaper && taskProgress[4].currentScore == 0) {
+                /*if (settings.ExamPaper && taskProgress[4].currentScore == 0) {
                     tasks[4] = false;//只要还有要做的，就当做没完成
                     console.log("5.做专项练习");
                     let result = await doExamPaper();
@@ -1208,7 +1226,7 @@ async function start() {
                     }
                 } else {
                     tasks[4] = true;
-                }
+                }*/
 
                 if (tasks[0] && tasks[1] && tasks[2] && tasks[3] && tasks[4]) {
                     //如果检查都做完了，就不用继续了
